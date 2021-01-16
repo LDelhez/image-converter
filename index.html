@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>M16 - Image Visualizer</title>
+        <style>
+            #download {
+                display: none;
+            }
+            .line {
+                margin-bottom: 1em;
+            }
+        </style>
+    </head>
+    <body>
+        <div class=line>
+            Upload a .bin image file: 
+            <input type="file" onchange="readFile(this)">
+        </div>
+        <div class=line>
+            <a id=download>Download PNG</a> 
+        </div>
+        <canvas id="canvas" height="512" width="512"></canvas>
+
+        <script>
+        var canvas = document.getElementById('canvas');
+        var download = document.getElementById('download');
+        var ctx = canvas.getContext('2d');
+
+        function readFile(input) {
+            var file = input.files[0];
+            var reader = new FileReader();
+            reader.readAsArrayBuffer(file);
+        
+            reader.onload = function() {
+                var a = new Uint8Array(reader.result);
+                var l = a.byteLength;
+                var n = Math.sqrt(2 * l / 3);
+                if (n != Math.floor(n)) {
+                    alert('Error: not square');
+                    return;
+                }
+                n = Math.floor(n);
+                ctx.canvas.width = n;
+                ctx.canvas.height = n;
+
+                var imageData = ctx.getImageData(0, 0, n, n);
+                const data = imageData.data;
+                for (var i = 0; i < data.length; i += 4) {
+                    data[i + 3] = 255;
+                }
+
+                for (var i = 0; i < a.byteLength; i++) {
+                    var first = a[i] >> 4;
+                    var second = a[i] % 16;
+                    var pos = i % (n * n / 2) * 2;
+                    var color = Math.floor(i / (n * n / 2));
+                    data[pos * 4 + color] = first * 16;
+                    pos++;
+                    data[pos * 4 + color] = second * 16;
+                }
+                ctx.putImageData(imageData, 0, 0);
+                download.style.setProperty('display', 'inline');
+                download.download = 'image.png';
+                download.href = ctx.canvas.toDataURL("image/png");
+            };
+        
+            reader.onerror = function() {
+                alert('Error!');
+            };       
+        }
+        </script>
+    </body>
+</html>
