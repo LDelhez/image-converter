@@ -14,11 +14,11 @@
     </head>
     <body>
         <div class=line>
-            Upload a .bin image file: 
+            Upload a .bin image file:
             <input type="file" onchange="readFile(this)">
         </div>
         <div class=line>
-            <a id=download>Download PNG</a> 
+            <a id=download>Download PNG</a>
         </div>
         <canvas id="canvas" height="512" width="512"></canvas>
 
@@ -27,11 +27,10 @@
         var download = document.getElementById('download');
         var ctx = canvas.getContext('2d');
 
-        function readFile(input) {
-            var file = input.files[0];
+        function readBin(file) {
             var reader = new FileReader();
             reader.readAsArrayBuffer(file);
-        
+
             reader.onload = function() {
                 var a = new Uint8Array(reader.result);
                 var l = a.byteLength;
@@ -64,10 +63,62 @@
                 download.download = 'image.png';
                 download.href = ctx.canvas.toDataURL("image/png");
             };
-        
+
             reader.onerror = function() {
                 alert('Error!');
-            };       
+            };
+        }
+
+        function readHex(file) {
+            var reader = new FileReader();
+            reader.readAsText(file);
+
+            reader.onload = function() {
+                var a = reader.result;
+                var l = a.length;
+                var n = Math.sqrt(l / 3);
+                if (n != Math.floor(n)) {
+                    alert('Error: not square');
+                    return;
+                }
+                n = Math.floor(n);
+                ctx.canvas.width = n;
+                ctx.canvas.height = n;
+
+                var imageData = ctx.getImageData(0, 0, n, n);
+                const data = imageData.data;
+                for (var i = 0; i < data.length; i += 4) {
+                    data[i + 3] = 255;
+                }
+
+                for (var i = 0; i < a.length; i++) {
+                    var aa = parseInt(a[i], 16);
+                    var pos = i % (n * n);
+                    var color = Math.floor(i / (n * n));
+                    data[pos * 4 + color] = aa * 16;
+                }
+                ctx.putImageData(imageData, 0, 0);
+                download.style.setProperty('display', 'inline');
+                download.download = 'image.png';
+                download.href = ctx.canvas.toDataURL("image/png");
+            };
+
+            reader.onerror = function() {
+                alert('Error!');
+            };
+        }
+
+        function readFile(input) {
+            var file = input.files[0];
+
+            if (file.name.endsWith('.bin'))
+                readBin(file);
+            else if(file.name.endsWith('.hex'))
+                readHex(file);
+            else {
+                alert('Not a .bin or .hex file!');
+            }
+
         }
         </script>
     </body>
